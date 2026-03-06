@@ -21,21 +21,39 @@ public class UserService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    public void register(RegisterRequest request) {
+    // ================= REGISTER =================
+
+    public AuthResponse register(RegisterRequest request) {
 
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new UserAlreadyExistsException("Email already exists");
+            throw new UserAlreadyExistsException("User already exists");
         }
 
-        User user = User.builder()
-                .name(request.getName())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.valueOf(request.getRole().toUpperCase()))
-                .build();
+        Role role;
+
+        if (request.getRole() == null) {
+            role = Role.CUSTOMER;  // default role
+        } else {
+            role = Role.valueOf(request.getRole().toUpperCase());
+        }
+
+        User user = new User();
+        user.setName(request.getName());
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(role);
 
         userRepository.save(user);
+
+        String token = jwtUtil.generateToken(
+                user.getEmail(),
+                user.getRole().name()
+        );
+
+        return new AuthResponse(token, user.getRole().name());
     }
+
+    // ================= LOGIN =================
 
     public AuthResponse login(LoginRequest request) {
 
@@ -47,8 +65,11 @@ public class UserService {
             throw new InvalidCredentialsException("Invalid email or password");
         }
 
-        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+        String token = jwtUtil.generateToken(
+                user.getEmail(),
+                user.getRole().name()
+        );
 
-        return new AuthResponse(token);
+        return new AuthResponse(token, user.getRole().name());
     }
 }

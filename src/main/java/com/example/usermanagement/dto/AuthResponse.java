@@ -1,9 +1,12 @@
 package com.example.usermanagement.dto;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
-@AllArgsConstructor
 @Getter
+@AllArgsConstructor
 public class AuthResponse {
+
     private String token;
+    private String role;
 }
